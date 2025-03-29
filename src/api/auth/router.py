@@ -1,27 +1,50 @@
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
+from fastapi import security
 from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from config import API_REDIRECT_URL, YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET
+from src.api.auth.dto import AuthResponseDTO, MessageResponseDTO
+from src.api.utils import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_timezone_by_ip,
+)
+from config import (
+    API_REDIRECT_URL,
+    YANDEX_CLIENT_ID,
+    YANDEX_CLIENT_SECRET,
+    YANDEX_REDIRECT_URI,
+)
 
-from database.models import Users
+from src.database.models import Users
+from src.services.dao import UserDAO
 from src.database.db import async_session
 
+from httpx import AsyncClient
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+
+router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+security = HTTPBearer()
 
 
 @router.get(
     "/yandex/redirect", summary="Роут дергается по нажатию кнопки войти через яндекс"
 )
 async def yandex_redirect():
+    return f"https://oauth.yandex.ru/authorize?response_type=code&client_id={YANDEX_CLIENT_ID}&redirect_uri={YANDEX_REDIRECT_URI}"
     return RedirectResponse(
         f"https://oauth.yandex.ru/authorize?response_type=code&client_id={YANDEX_CLIENT_ID}&redirect_uri={YANDEX_REDIRECT_URI}"
     )
 
 
-@router.get("/yandex/callback", summary="Роут вызывается сам")
+@router.get(
+    "/yandex/callback", summary="Роут вызывается сам", response_model=AuthResponseDTO
+)
 async def yandex_callback(code: str, request: Request):
     ip_address = request.client.host
     time_zone_user = get_timezone_by_ip(ip_address)
@@ -59,22 +82,24 @@ async def yandex_callback(code: str, request: Request):
             return JSONResponse({"message": "Provide access to the number"}, 401)
         user_num = num_not_clear.replace("+", "")
 
-        user = await get_user_by_number(user_num)
+        user = await UserDAO.find_one_by_filters(phone=user_num)
+
+        birthday = datetime.strptime(userinfo["birthday"], "%Y-%m-%d")
 
         if not user:
-            async with async_session() as session:
-                user = Users(
-                    number=user_num,
-                    created_at=datetime.now(),
-                    time_zone=time_zone_user,
-                )
-                session.add(user)
-                await session.commit()
+            user = Users(
+                name=userinfo["first_name"],
+                surname=userinfo["last_name"],
+                email=userinfo["default_email"],
+                date_of_birth=birthday,
+                phone=user_num,
+                created_at=datetime.now(),
+                time_zone=time_zone_user,
+            )
+            await UserDAO.add_one(user)
 
         user.time_zone = time_zone_user
-        async with async_session() as session:
-            session.add(user)
-            await session.commit()
+        await UserDAO.add_one(user)
 
         token = create_access_token(data={"sub": "audio_upload", "user_id": user.id})
 
@@ -82,6 +107,41 @@ async def yandex_callback(code: str, request: Request):
             data={"sub": "audio_upload", "user_id": user.id}
         )
 
-        return RedirectResponse(
-            f"prosvet://auth?token={token}&refresh={refresh_token}&allData={all_data}"
+        return AuthResponseDTO(
+            access_token=token, refresh_token=refresh_token, token_type="Bearer"
         )
+
+
+@router.post("/refresh", summary="Обновление токена", response_model=AuthResponseDTO)
+async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+
+    try:
+        payload = decode_token(token)
+        user_id = payload["user_id"]
+        type = payload["type"]
+    except Exception as e:
+        print(e)
+        return MessageResponseDTO(
+            message="Invalid token", status_code=status.HTTP_401_UNAUTHORIZED
+        )
+
+    user = await UserDAO.find_one_by_filters(id=user_id)
+
+    if type != "refresh":
+        return MessageResponseDTO(
+            message="You token is not refresh", status_code=status.HTTP_401_UNAUTHORIZED
+        )
+
+    if not user:
+        return MessageResponseDTO(
+            message="User not authorized", status_code=status.HTTP_404_NOT_FOUND
+        )
+
+    token = create_access_token(data={"sub": "hotel", "user_id": user.id})
+
+    refresh_token = create_refresh_token(data={"sub": "hotel", "user_id": user.id})
+
+    return AuthResponseDTO(
+        access_token=token, refresh_token=refresh_token, token_type="Bearer"
+    )

@@ -20,8 +20,14 @@ POSTGRES_URL = "postgresql+asyncpg://{}:{}@{}:{}/{}".format(
 )
 
 
+# JWT
+PUBLIC_KEY = str(os.getenv("PUBLIC_KEY"))
+
+ALGORITHM = "HS256"
+
+
 # YANDEX OAUTH API
 YANDEX_CLIENT_SECRET = os.getenv("YANDEX_CLIENT_SECRET")
 YANDEX_CLIENT_ID = os.getenv("YANDEX_CLIENT_ID")
-YANDEX_REDIRECT_URI = "https://vlad.ayarayrovich.ru/api/v1/auth/yandex/callback"
-API_REDIRECT_URL = "https://vlad.ayarayrovich.ru/docs"
+YANDEX_REDIRECT_URI = "https://vlad.ayarayarovich.ru/api/v1/auth/yandex/callback"
+API_REDIRECT_URL = "https://vlad.ayarayarovich.ru/docs"

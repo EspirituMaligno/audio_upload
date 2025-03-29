@@ -17,7 +17,8 @@ class Users(Base):
     email: Mapped[str] = mapped_column(nullable=False, unique=True)
     date_of_birth: Mapped[date] = mapped_column(nullable=True)
     phone: Mapped[str] = mapped_column(nullable=True)
-    role: Mapped[str] = mapped_column(nullable=False)
+    role: Mapped[str] = mapped_column(default="user")
+    time_zone: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.now(timezone.utc)
     )
