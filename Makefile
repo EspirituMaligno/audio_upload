@@ -4,6 +4,12 @@ build:
 up:
 	docker compose -f deployment/docker-compose.yaml up -d
 
+up db:
+	docker compose -f deployment/docker-compose.yaml up -d db
+
+down db:
+	docker compose -f deployment/docker-compose.yaml down db
+
 down:
 	docker compose -f deployment/docker-compose.yaml down
 
