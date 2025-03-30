@@ -39,3 +39,18 @@ async def delete_user(
     await UserDAO.delete_one(id=user_id)
 
     return MessageResponseDTO(message="User deleted successfully", status_code=200)
+
+
+@router.post(
+    "/make-admin",
+    summary="Получение прав администратора",
+    response_model=MessageResponseDTO,
+)
+async def make_admin(
+    user: Users = Depends(get_current_user),
+):
+    await UserDAO.update_one(user.id, role="admin")
+
+    return MessageResponseDTO(
+        message="User successfully promoted to admin", status_code=200
+    )

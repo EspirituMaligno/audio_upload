@@ -64,6 +64,21 @@ async def upload_audio(
     )
 
 
+@router.put(
+    "/{audio_id}",
+    summary="Редактирование аудио файла",
+    response_model=MessageResponseDTO,
+)
+async def update_audio(
+    audio_id: int, title: str, user: Users = Depends(get_current_user)
+):
+    await AudioDAO.update_one(audio_id, user_id=user.id, file_name=title)
+
+    return MessageResponseDTO(
+        message="Audio file updated successfully", status_code=200
+    )
+
+
 @router.delete("/", summary="Удаление аудио файла по id")
 async def delete_audio(audio_id: int, user: Users = Depends(get_current_user)):
     await AudioDAO.delete_one(id=audio_id, user_id=user.id)
