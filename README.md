@@ -32,8 +32,7 @@
 3. **Запуск приложения**
 
    ```bash
-   cd .deployment
-   docker-compose up --build
+   docker-compose -f .deployment/docker-compose.yml up --build
    ```
 
 ## 🌐 Доступ к приложению
@@ -44,7 +43,7 @@
 ## 🛑 Остановка приложения
 
 ```bash
-docker-compose down
+docker-compose -f .deployment/docker-compose.yml down
 ```
 
 ## 📝 Примечания

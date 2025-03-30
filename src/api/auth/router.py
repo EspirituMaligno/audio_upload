@@ -51,6 +51,10 @@ async def yandex_redirect():
 async def yandex_callback(code: str, request: Request):
     ip_address = request.client.host
     time_zone_user = get_timezone_by_ip(ip_address)
+
+    if time_zone_user is None:
+        time_zone_user = "Europe/Moscow"
+
     async with AsyncClient() as client:
         response = await client.post(
             "https://oauth.yandex.ru/token",

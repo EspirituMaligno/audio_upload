@@ -5,9 +5,9 @@ FROM python:3.13
 # - gcc: for psypcopg2-binary
 # - git: for pre-commit
 RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y gcc git nano mc gettext && \
-    apt-get clean
+    apt-get install -y gcc postgresql-client && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # This prevents Python from writing out pyc files
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -29,6 +29,18 @@ RUN pip install --upgrade pip && \
 
 # Copy project files
 COPY . .
+
+RUN echo '#!/bin/sh\n\
+until pg_isready -h db -U ${POSTGRES_USER}; do\n\
+  echo "Waiting for PostgreSQL..."\n\
+  sleep 2\n\
+done\n\
+python init_db.py\n\
+exec "$@"\n\
+' > /entrypoint.sh && \
+    chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 # EXPOSE 80
 # CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
