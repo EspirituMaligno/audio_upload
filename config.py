@@ -31,3 +31,17 @@ YANDEX_CLIENT_SECRET = os.getenv("YANDEX_CLIENT_SECRET")
 YANDEX_CLIENT_ID = os.getenv("YANDEX_CLIENT_ID")
 YANDEX_REDIRECT_URI = "https://vlad.ayarayarovich.ru/api/v1/auth/yandex/callback"
 API_REDIRECT_URL = "https://vlad.ayarayarovich.ru/docs"
+
+
+# AUDIO
+AUDIO_DIR = "localhost:5000/"
+ALLOWED_AUDIO_EXTENSIONS = {
+    ".mp3",
+    ".wav",
+    ".ogg",
+    ".m4a",
+    ".flac",
+    ".aac",
+    ".wma",
+    ".aiff",
+}

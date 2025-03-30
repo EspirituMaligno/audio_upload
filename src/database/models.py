@@ -18,6 +18,7 @@ class Users(Base):
     date_of_birth: Mapped[date] = mapped_column(nullable=True)
     phone: Mapped[str] = mapped_column(nullable=True)
     role: Mapped[str] = mapped_column(default="user")
+    is_active: Mapped[bool] = mapped_column(default=True)
     time_zone: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.now(timezone.utc)

@@ -1,4 +1,4 @@
-from sqlalchemy import delete
+from sqlalchemy import delete, update
 from sqlalchemy.future import select
 
 from src.database.db import async_session
@@ -38,8 +38,22 @@ class BaseDAO:
             await session.commit()
 
     @classmethod
+    async def update_one(cls, entity_id: int, **update_data):
+        async with async_session() as session:
+            query = (
+                update(cls.model).where(cls.model.id == entity_id).values(**update_data)
+            )
+            await session.execute(query)
+            await session.commit()
+
+            result = await session.execute(
+                select(cls.model).where(cls.model.id == entity_id)
+            )
+            return result.scalar_one()
+
+    @classmethod
     async def delete_one(cls, **filter_by):
         query = delete(cls.model).filter_by(**filter_by)
         async with async_session() as session:
-            session.execute(query)
+            await session.execute(query)
             await session.commit()

@@ -93,13 +93,11 @@ async def yandex_callback(code: str, request: Request):
                 email=userinfo["default_email"],
                 date_of_birth=birthday,
                 phone=user_num,
-                created_at=datetime.now(),
                 time_zone=time_zone_user,
             )
             await UserDAO.add_one(user)
 
-        user.time_zone = time_zone_user
-        await UserDAO.add_one(user)
+        await UserDAO.update_one(user.id, time_zone=time_zone_user)
 
         token = create_access_token(data={"sub": "audio_upload", "user_id": user.id})
 
