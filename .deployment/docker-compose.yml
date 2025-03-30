@@ -17,19 +17,22 @@ services:
       - ../.env
 
   backend:
-    build: .
+    build:
+      context: ..
+      dockerfile: .deployment/Dockerfile
+
     container_name: backend-api
     restart: always
     ports:
-      - "8000:8000"
+      - "5000:5000"
     depends_on:
       - db
     environment:
       DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}"
     volumes:
-      - .:/app
+      - ../:/app
     working_dir: /app
-    command: ["uvicorn", "main:app", "--host", "localhost", "--port", "5000", "--reload"]
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
     env_file:
       - ../.env
 
