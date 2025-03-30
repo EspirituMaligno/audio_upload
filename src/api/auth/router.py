@@ -5,12 +5,15 @@ from fastapi import security
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from src.api.auth.schemas import UserCreateSchema, UserLoginSchema
 from src.api.auth.dto import AuthResponseDTO, MessageResponseDTO
 from src.api.utils import (
+    check_password,
     create_access_token,
     create_refresh_token,
     decode_token,
     get_timezone_by_ip,
+    hash_password,
 )
 from config import (
     API_REDIRECT_URL,
@@ -136,9 +139,70 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(secu
             message="User not authorized", status_code=status.HTTP_404_NOT_FOUND
         )
 
-    token = create_access_token(data={"sub": "hotel", "user_id": user.id})
+    token = create_access_token(data={"sub": "audio_upload", "user_id": user.id})
 
-    refresh_token = create_refresh_token(data={"sub": "hotel", "user_id": user.id})
+    refresh_token = create_refresh_token(
+        data={"sub": "audio_upload", "user_id": user.id}
+    )
+
+    return AuthResponseDTO(
+        access_token=token, refresh_token=refresh_token, token_type="Bearer"
+    )
+
+
+@router.post(
+    "/signup", summary="Регистрация пользователя", response_model=MessageResponseDTO
+)
+async def signup(data: UserCreateSchema, request: Request):
+    ip_address = request.client.host
+    time_zone_user = get_timezone_by_ip(ip_address)
+    if data.password != data.confirm_password:
+        return MessageResponseDTO(
+            message="Пароли не совпадают",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    user = await UserDAO.find_one_by_filters(email=data.email)
+    if user:
+        return MessageResponseDTO(
+            message="Пользователь с таким email уже существует",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user = Users(
+        email=data.email,
+        hash_password=hash_password(data.password),
+        name=data.first_name,
+        surname=data.last_name,
+        time_zone=time_zone_user,
+    )
+
+    await UserDAO.add_one(user)
+
+    return MessageResponseDTO(
+        message="Пользователь успешно зарегистрирован",
+        status_code=status.HTTP_201_CREATED,
+    )
+
+
+@router.post("/login", summary="Вход в систему", response_model=AuthResponseDTO)
+async def login(data: UserLoginSchema):
+    user = await UserDAO.find_one_by_filters(email=data.email)
+
+    if not user:
+        return MessageResponseDTO(
+            message="User not found", status_code=status.HTTP_401_UNAUTHORIZED
+        )
+
+    if not check_password(data.password, user.hash_password):
+        return MessageResponseDTO(
+            message="Wrong password", status_code=status.HTTP_401_UNAUTHORIZED
+        )
+
+    token = create_access_token(data={"sub": "audio_upload", "user_id": user.id})
+
+    refresh_token = create_refresh_token(
+        data={"sub": "audio_upload", "user_id": user.id}
+    )
 
     return AuthResponseDTO(
         access_token=token, refresh_token=refresh_token, token_type="Bearer"
