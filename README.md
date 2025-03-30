@@ -37,7 +37,8 @@
 
 ## 🌐 Доступ к приложению
 
-- API: <http://0.0.0.0:5000>
+- API: <http://0.0.0.0:5000> или <http://localhost:5000>
+- Swagger UI: <http://0.0.0.0:5000/docs> или <http://localhost:5000/docs>
 - База данных: localhost:5433
 
 ## 🛑 Остановка приложения
