@@ -1,6 +1,6 @@
 import requests
 from fastapi.responses import JSONResponse
-from jose import jwt
+from jose import JWTError, jwt
 from datetime import date, datetime, timedelta, timezone
 import bcrypt
 
@@ -21,7 +21,7 @@ def check_password(password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=30)
+    expire = datetime.now(timezone.utc) + timedelta(seconds=2)
     to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(to_encode, PUBLIC_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -37,23 +37,13 @@ def create_refresh_token(data: dict) -> str:
 
 def decode_token(token: str) -> dict:
     try:
-        payload = jwt.decode(
-            token, PUBLIC_KEY, algorithms=[ALGORITHM], options={"verify_exp": True}
-        )
+        payload = jwt.decode(token, PUBLIC_KEY, algorithms=[ALGORITHM])
         token_type = payload.get("type")
-
         if token_type not in ["access", "refresh"]:
-            return JSONResponse({"status": "Invalid type token"}, 401)
-
-        if "exp" in payload:
-            expire = datetime.fromtimestamp(payload["exp"], timezone.utc)
-            if expire < datetime.now(timezone.utc):
-                return JSONResponse({"status": "Token expired"}, 401)
-
+            raise JWTError("Invalid token type")
         return payload
-    except jwt.JWTError as e:
-        print(f"JWTError: {e}")
-        return JSONResponse({"status": "Invalid credentials"}, 401)
+    except JWTError as e:
+        raise e from None
 
 
 def get_timezone_by_ip(ip_address):

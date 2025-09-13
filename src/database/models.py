@@ -2,10 +2,11 @@ from datetime import date, datetime, timedelta, time, timezone
 
 import pytz
 from sqlalchemy import DateTime, ForeignKey, Text, desc, select
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import mapped_column, Mapped, relationship
+from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, relationship
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 
 class Users(Base):
